@@ -1,5 +1,27 @@
 from rest_framework import serializers
-from .models import League, Season, Team, Game, LeagueStanding
+from .models import League, Season, Team, Game, LeagueStanding, Player, Goal
+from django.contrib.auth.models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'is_staff']
+
+
+class PlayerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['id', 'name', 'position', 'nationality', 'birth_date', 'height', 'weight', 'created_at']
+
+
+class GoalSerializer(serializers.ModelSerializer):
+    scorer = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all())
+    assistant = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all(), allow_null=True, required=False)
+
+    class Meta:
+        model = Goal
+        fields = ['id', 'game', 'scorer', 'assistant', 'minute', 'is_penalty', 'is_own_goal', 'created_at']
 
 
 class LeagueSerializer(serializers.ModelSerializer):

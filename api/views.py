@@ -15,6 +15,8 @@ from .serializers import (
     LeagueSerializer, SeasonSerializer, TeamSerializer,
     GameSerializer, LeagueStandingSerializer
 )
+from .serializers import UserSerializer
+from django.contrib.auth.models import User
 from .forms import (
     LeagueForm, SeasonForm, TeamForm, GameForm,
     PlayerForm, PlayerContractForm, GoalForm
@@ -486,6 +488,44 @@ class LeagueStandingViewSet(viewsets.ModelViewSet):
     serializer_class = LeagueStandingSerializer
 
 
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """Minimal readonly user viewset. Provides a `me` action for the current user."""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        """Return the currently authenticated user's serialized data."""
+        if not request.user or not request.user.is_authenticated:
+            return Response({'detail': 'Not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
+
+class PlayerViewSet(viewsets.ModelViewSet):
+    """CRUD for players."""
+    queryset = Player.objects.all().order_by('name')
+    # import serializer lazily to avoid circular import issues
+    from .serializers import PlayerSerializer
+    serializer_class = PlayerSerializer
+
+
+class GoalViewSet(viewsets.ModelViewSet):
+    """CRUD for goals."""
+    queryset = Goal.objects.all().select_related('scorer', 'assistant', 'game')
+    from .serializers import GoalSerializer
+    serializer_class = GoalSerializer
+
+
+class StatsViewSet(viewsets.ViewSet):
+    """Simple stats endpoints. `list` returns top scorers."""
+    def list(self, request):
+        top = Player.objects.annotate(goals_count=Count('goals')).order_by('-goals_count')[:10]
+        from .serializers import PlayerSerializer
+        serializer = PlayerSerializer(top, many=True)
+        return Response({'top_scorers': serializer.data})
+
+
 @api_view(['GET'])
 def predict_winner(request):
     """Predict a winner between two teams using simple historical win rates.
@@ -544,6 +584,32 @@ def predict_winner(request):
         'probability': round(max(prob1, prob2), 3),
     })
 
+
+@api_view(['GET'])
+def predict_season(request):
+    """Simple season winner prediction: returns team with highest points in latest standings if available.
+
+    Query params: season (id). If omitted, use active season of the first league.
+    """
+    season_id = request.query_params.get('season')
+    try:
+        if season_id:
+            season = Season.objects.get(pk=int(season_id))
+        else:
+            season = Season.objects.filter(is_active=True).first()
+    except (ValueError, Season.DoesNotExist):
+        return Response({'detail': 'Invalid or missing season id.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not season:
+        return Response({'detail': 'No season found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Use cached standings if available
+    standing = LeagueStanding.objects.filter(season=season).order_by('-points', '-goal_difference').first()
+    if not standing:
+        return Response({'detail': 'No standings available for this season.'}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response({'predicted_winner': standing.team.id, 'team': standing.team.name, 'points': standing.points})
+
 def league_detail(request, pk):
     """View for showing detailed league information."""
     league = get_object_or_404(League, pk=pk)
@@ -580,7 +646,8 @@ def league_detail(request, pk):
 def season_detail(request, pk):
     """View for showing detailed season information."""
     season = get_object_or_404(Season.objects.select_related('league'), pk=pk)
-    teams = Team.objects.filter(season=season)
+    # Teams are related to a league, not directly to a season. Use the season's league.
+    teams = Team.objects.filter(league=season.league)
     games = Game.objects.filter(season=season).order_by('played_at')
     now = timezone.now()
 

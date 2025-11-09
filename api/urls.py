@@ -1,10 +1,24 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView, TokenRefreshView, TokenVerifyView
+)
 from .views import (
+    # viewsets
     LeagueViewSet, SeasonViewSet, TeamViewSet,
     GameViewSet, LeagueStandingViewSet, PlayerViewSet,
     GoalViewSet, UserViewSet, StatsViewSet,
-    predict_winner, predict_season
+    # function-based API endpoints / pages
+    predict_winner, predict_season,
+    index, dashboard,
+    add_league, add_season, add_team, add_game,
+    edit_league, edit_season, edit_team, edit_game,
+    delete_league, delete_season, delete_team, delete_game,
+    list_leagues, list_seasons, list_teams, list_games,
+    list_players, add_player, player_detail, edit_player, delete_player,
+    add_contract, edit_contract, delete_contract,
+    add_goal, edit_goal, delete_goal,
+    league_detail, season_detail, team_detail, game_detail,
 )
 
 # API router for viewsets
@@ -31,7 +45,14 @@ urlpatterns = [
     path('predict/season/', predict_season, name='predict_season'),
     
     # Include router URLs
-    path('', include(router.urls)),
+    # path('', include(router.urls)),
+    # Site/listing pages (HTML views)
+    path('leagues/', list_leagues, name='list_leagues'),
+    path('seasons/', list_seasons, name='list_seasons'),
+    path('teams/', list_teams, name='list_teams'),
+    path('games/', list_games, name='list_games'),
+    path('leagues/<int:pk>/', league_detail, name='league_detail'),
+    path('seasons/<int:pk>/', season_detail, name='season_detail'),
     path('teams/<int:pk>/', team_detail, name='team_detail'),
     # Add views
     path('leagues/add/', add_league, name='add_league'),

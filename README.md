@@ -2,6 +2,8 @@
 
 A Django web application for managing football leagues, teams, players, and matches. Track league standings, match results, and player statistics in real-time.
 
+This project is coded by Copilot completely.
+
 ## Features
 
 ### League Management
