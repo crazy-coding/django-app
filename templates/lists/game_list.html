@@ -1,0 +1,41 @@
+{% extends 'lists/base_list.html' %}
+
+{% block title %}Games{% endblock %}
+
+{% block action_button %}
+<a href="{% url 'add_game' %}" class="btn btn-primary btn-sm">Add Game</a>
+{% endblock %}
+
+{% block table_headers %}
+<th>Date</th>
+<th>Home Team</th>
+<th>Score</th>
+<th>Away Team</th>
+<th>Season</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for game in games %}
+<tr>
+    <td>{{ game.played_at|date:"Y-m-d H:i" }}</td>
+    <td>{{ game.home_team.name }}</td>
+    <td>
+        <a href="{% url 'game_detail' game.id %}" class="text-decoration-none text-primary">
+            {% if game.home_score is not None %}
+                {{ game.home_score }} - {{ game.away_score }}
+            {% else %}
+                vs
+            {% endif %}
+        </a>
+    </td>
+    <td>{{ game.away_team.name }}</td>
+    <td>{{ game.season.name }}</td>
+    <td>
+        <div class="btn-group">
+            <a href="{% url 'edit_game' game.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="{% url 'delete_game' game.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this game?')">Delete</a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

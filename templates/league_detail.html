@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ league.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ league.name }}</h1>
+        <div>
+            <a href="{% url 'list_leagues' %}" class="btn btn-outline-primary me-2">Back to Leagues</a>
+            <a href="{% url 'edit_league' league.id %}" class="btn btn-primary">Edit League</a>
+        </div>
+    </div>
+
+    <!-- League Information -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h3 class="mb-0">League Info</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">{{ league.name }}</dd>
+                        <dt class="col-sm-4">Country</dt>
+                        <dd class="col-sm-8">{{ league.country }}</dd>
+                        <dt class="col-sm-4">Founded</dt>
+                        <dd class="col-sm-8">{{ league.founded_date|date:"Y" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h3 class="mb-0">Seasons</h3>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for season in seasons %}
+                        <a href="{% url 'season_detail' season.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            {{ season.name }}
+                            {% if season.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Season Section -->
+    {% if active_season %}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h3 class="mb-0">Current Season - {{ active_season.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- League Table -->
+                    <h4 class="mb-3">League Table</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Pos</th>
+                                    <th>Team</th>
+                                    <th>P</th>
+                                    <th>W</th>
+                                    <th>D</th>
+                                    <th>L</th>
+                                    <th>GF</th>
+                                    <th>GA</th>
+                                    <th>GD</th>
+                                    <th>Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for standing in standings %}
+                                <tr>
+                                    <td>{{ standing.position }}</td>
+                                    <td>
+                                        <a href="{% url 'team_detail' standing.team.id %}" class="text-decoration-none">
+                                            {{ standing.team.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ standing.played }}</td>
+                                    <td>{{ standing.won }}</td>
+                                    <td>{{ standing.drawn }}</td>
+                                    <td>{{ standing.lost }}</td>
+                                    <td>{{ standing.goals_for }}</td>
+                                    <td>{{ standing.goals_against }}</td>
+                                    <td>{{ standing.goal_difference }}</td>
+                                    <td><strong>{{ standing.points }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <!-- Recent Results -->
+                    <h4 class="mb-3">Recent Results</h4>
+                    {% for game in recent_games %}
+                    <div class="card mb-2">
+                        <div class="card-body p-2">
+                            <div class="small text-muted mb-1">{{ game.played_at|date:"M d, Y" }}</div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ game.home_team.name }}</span>
+                                <a href="{% url 'game_detail' game.id %}" class="mx-2 text-decoration-none">
+                                    <strong>{{ game.home_score }} - {{ game.away_score }}</strong>
+                                </a>
+                                <span>{{ game.away_team.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Upcoming Fixtures -->
+                    <h4 class="mb-3 mt-4">Upcoming Fixtures</h4>
+                    {% for game in upcoming_games %}
+                    <div class="card mb-2">
+                        <div class="card-body p-2">
+                            <div class="small text-muted mb-1">{{ game.played_at|date:"M d, Y" }}</div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ game.home_team.name }}</span>
+                                <span class="mx-2">vs</span>
+                                <span>{{ game.away_team.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

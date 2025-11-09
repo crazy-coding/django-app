@@ -1,0 +1,29 @@
+{% extends 'lists/base_list.html' %}
+
+{% block title %}Leagues{% endblock %}
+
+{% block action_button %}
+<a href="{% url 'add_league' %}" class="btn btn-primary btn-sm">Add League</a>
+{% endblock %}
+
+{% block table_headers %}
+<th>Name</th>
+<th>Country</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for league in leagues %}
+<tr>
+    <td>
+        <a href="{% url 'league_detail' league.id %}" class="text-decoration-none">{{ league.name }}</a>
+    </td>
+    <td>{{ league.country }}</td>
+    <td>
+        <div class="btn-group">
+            <a href="{% url 'edit_league' league.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="{% url 'delete_league' league.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this league?')">Delete</a>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}

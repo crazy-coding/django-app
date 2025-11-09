@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}{{ league.name }} - {{ season.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    margin: 0 2px;
+    font-size: 12px;
+    font-weight: bold;
+}
+.form-W { background-color: #28a745; color: white; }
+.form-D { background-color: #ffc107; color: black; }
+.form-L { background-color: #dc3545; color: white; }
+
+.stats-card {
+    transition: transform 0.2s;
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if error %}
+    <div class="alert alert-warning">{{ error }}</div>
+    {% else %}
+    <!-- League Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1>
+                <a href="{% url 'league_detail' league.id %}" class="text-decoration-none">{{ league.name }}</a>
+                <small class="text-muted">
+                    <a href="{% url 'season_detail' season.id %}" class="text-decoration-none">{{ season.name }}</a>
+                </small>
+            </h1>
+        </div>
+        <div class="col-auto">
+            <div class="d-flex gap-2">
+                <a href="{% url 'add_league' %}" class="btn btn-sm btn-outline-primary">Add League</a>
+                <a href="{% url 'add_season' %}" class="btn btn-sm btn-outline-secondary">Add Season</a>
+                <a href="{% url 'add_team' %}" class="btn btn-sm btn-outline-success">Add Team</a>
+                <a href="{% url 'add_game' %}" class="btn btn-sm btn-outline-warning">Add Game</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- League Stats Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Games</h5>
+                    <h2 class="mb-0">{{ league_stats.total_games }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Goals Scored</h5>
+                    <h2 class="mb-0">{{ league_stats.total_goals }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Clean Sheets</h5>
+                    <h2 class="mb-0">{{ league_stats.total_clean_sheets }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Avg Goals/Game</h5>
+                    <h2 class="mb-0">{{ league_stats.avg_goals_per_game|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- League Table and Stats -->
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- League Table -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">League Table</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Pos</th>
+                                    <th>Team</th>
+                                    <th>P</th>
+                                    <th>W</th>
+                                    <th>D</th>
+                                    <th>L</th>
+                                    <th>GF</th>
+                                    <th>GA</th>
+                                    <th>GD</th>
+                                    <th>Pts</th>
+                                    <th>Form</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for standing in standings %}
+                                <tr>
+                                    <td>{{ standing.position }}</td>
+                                    <td>
+                                        <a href="{% url 'team_detail' standing.team.id %}" class="text-decoration-none">
+                                            <strong>{{ standing.team.name }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>{{ standing.played }}</td>
+                                    <td>{{ standing.won }}</td>
+                                    <td>{{ standing.drawn }}</td>
+                                    <td>{{ standing.lost }}</td>
+                                    <td>{{ standing.goals_for }}</td>
+                                    <td>{{ standing.goals_against }}</td>
+                                    <td>{{ standing.goal_difference }}</td>
+                                    <td><strong>{{ standing.points }}</strong></td>
+                                    <td>
+                                        {% for form_item in form_data %}
+                                            {% if form_item.team == standing.team %}
+                                                {% for result in form_item.form %}
+                                                    <span class="form-indicator form-{{ result }}">{{ result }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Stats Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Team Performance</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="teamStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Next Matchday -->
+            {% if next_matchday_games %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Next Matchday - {{ next_matchday_date|date:"d M Y" }}</h3>
+                </div>
+                <div class="card-body">
+                    {% for game in next_matchday_games %}
+                    <div class="match-fixture mb-3">
+                        <div class="text-muted small mb-1">{{ game.played_at|time:"H:i" }}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'team_detail' game.home_team.id %}" class="text-decoration-none">
+                                <span>{{ game.home_team.name }}</span>
+                            </a>
+                            <span class="badge bg-secondary mx-2">vs</span>
+                            <a href="{% url 'team_detail' game.away_team.id %}" class="text-decoration-none">
+                                <span>{{ game.away_team.name }}</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Results -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Recent Results</h3>
+                </div>
+                <div class="card-body">
+                    {% for game in recent_games %}
+                    <div class="match-result mb-3">
+                        <div class="text-muted small mb-1">{{ game.played_at|date:"d M Y" }}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'team_detail' game.home_team.id %}" class="text-decoration-none">
+                                <span class="text-dark">{{ game.home_team.name }}</span>
+                            </a>
+                            <a href="{% url 'game_detail' game.id %}" class="text-decoration-none">
+                                <strong class="mx-2 text-primary">{{ game.home_score }} - {{ game.away_score }}</strong>
+                            </a>
+                            <a href="{% url 'team_detail' game.away_team.id %}" class="text-decoration-none">
+                                    <span class="text-dark">{{ game.away_team.name }}</span>
+                                </a>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Upcoming Fixtures -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Upcoming Fixtures</h3>
+                </div>
+                <div class="card-body">
+                    {% for game in upcoming_games %}
+                    <div class="match-fixture mb-3">
+                        <div class="text-muted small mb-1">{{ game.played_at|date:"d M Y" }}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'team_detail' game.home_team.id %}" class="text-decoration-none">
+                                <span>{{ game.home_team.name }}</span>
+                            </a>
+                            <span class="text-muted mx-2">vs</span>
+                            <a href="{% url 'team_detail' game.away_team.id %}" class="text-decoration-none">
+                                <span>{{ game.away_team.name }}</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Stats -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Home vs Away Performance</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="homeAwayChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Goals Distribution</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="goalsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Charts Initialization -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Team Stats Chart
+    const teamStatsCtx = document.getElementById('teamStatsChart').getContext('2d');
+    new Chart(teamStatsCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for standing in standings %}{% if not forloop.first %}, {% endif %}'{{ standing.team.name }}'{% endfor %}],
+            datasets: [{
+                label: 'Points',
+                data: [{% for standing in standings %}{% if not forloop.first %}, {% endif %}{{ standing.points }}{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Home vs Away Performance Chart
+    const homeAwayCtx = document.getElementById('homeAwayChart').getContext('2d');
+    new Chart(homeAwayCtx, {
+        type: 'radar',
+        data: {
+            labels: ['Wins', 'Draws', 'Losses', 'Goals For', 'Goals Against'],
+            datasets: [{
+                label: 'Home',
+                data: [
+                    {{ standings.0.home_wins }},
+                    {{ standings.0.home_draws }},
+                    {{ standings.0.home_losses }},
+                    {{ standings.0.goals_for }},
+                    {{ standings.0.goals_against }}
+                ],
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                r: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Goals Distribution Chart
+    const goalsCtx = document.getElementById('goalsChart').getContext('2d');
+    new Chart(goalsCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Goals For', 'Goals Against'],
+            datasets: [{
+                data: [
+                    {{ standings.0.goals_for }},
+                    {{ standings.0.goals_against }}
+                ],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 99, 132, 0.5)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+});
+</script>
+{% endblock %}

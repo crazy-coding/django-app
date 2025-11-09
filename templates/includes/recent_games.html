@@ -1,0 +1,27 @@
+{% load static %}
+
+<div class="list-group list-group-flush">
+    {% for game in recent_games %}
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">{{ game.played_at|date:"M d, Y" }}</small>
+            <small class="badge bg-light text-dark">{{ game.season.league.name }}</small>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <span class="team-name">{{ game.home_team.name }}</span>
+            <a href="{% url 'game_detail' game.id %}" class="score px-2 text-decoration-none text-primary">
+                {% if game.home_score is not None %}
+                    {{ game.home_score }} - {{ game.away_score }}
+                {% else %}
+                    vs
+                {% endif %}
+            </a>
+            <span class="team-name">{{ game.away_team.name }}</span>
+        </div>
+    </div>
+    {% empty %}
+    <div class="list-group-item text-center">
+        No recent games
+    </div>
+    {% endfor %}
+</div>

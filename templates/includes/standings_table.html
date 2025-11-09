@@ -1,0 +1,40 @@
+{% load static %}
+
+<div class="table-responsive">
+    <table class="table table-sm standings-table">
+        <thead class="table-light">
+            <tr>
+                <th>Pos</th>
+                <th>Team</th>
+                <th class="text-center">P</th>
+                <th class="text-center">W</th>
+                <th class="text-center">D</th>
+                <th class="text-center">L</th>
+                <th class="text-center">GF</th>
+                <th class="text-center">GA</th>
+                <th class="text-center">GD</th>
+                <th class="text-center">Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for standing in season.standings.all %}
+            <tr>
+                <td>{{ standing.position }}</td>
+                <td class="team-name">{{ standing.team.name }}</td>
+                <td class="text-center">{{ standing.played }}</td>
+                <td class="text-center">{{ standing.won }}</td>
+                <td class="text-center">{{ standing.drawn }}</td>
+                <td class="text-center">{{ standing.lost }}</td>
+                <td class="text-center">{{ standing.goals_for }}</td>
+                <td class="text-center">{{ standing.goals_against }}</td>
+                <td class="text-center">{{ standing.goal_difference }}</td>
+                <td class="text-center"><strong>{{ standing.points }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" class="text-center">No standings data available</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
