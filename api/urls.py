@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView, TokenRefreshView, TokenVerifyView
+    TokenRefreshView, TokenVerifyView
 )
 from .views import (
     # viewsets
@@ -20,6 +20,7 @@ from .views import (
     add_goal, edit_goal, delete_goal,
     league_detail, season_detail, team_detail, game_detail,
 )
+from .views import CustomTokenObtainPairView
 
 # API router for viewsets
 router = DefaultRouter()
@@ -35,10 +36,10 @@ router.register('stats', StatsViewSet, basename='stats')
 
 urlpatterns = [
     # Authentication endpoints
-    path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    path('auth/user/', UserViewSet.as_view({'get': 'me'}), name='user_me'),
+    path('api/auth/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/auth/user/', UserViewSet.as_view({'get': 'me'}), name='user_me'),
     
     # Prediction endpoints
     path('predict/match/', predict_winner, name='predict_match'),

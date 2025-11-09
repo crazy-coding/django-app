@@ -103,24 +103,59 @@ django-app/
 
 ## API Endpoints
 
-### Teams
-- `GET /api/teams/` - List all teams
-- `POST /api/teams/` - Create a new team
-- `GET /api/teams/<id>/` - Get team details
-- `PUT /api/teams/<id>/` - Update team
-- `DELETE /api/teams/<id>/` - Delete team
+Below is a concise list of the API endpoints provided by the project. Most API resources are exposed as DRF viewsets under `/api/` and support standard REST verbs (GET, POST, PUT/PATCH, DELETE) unless noted.
 
-### Games
-- `GET /api/games/` - List all games
-- `POST /api/games/` - Create a new game
-- `GET /api/games/<id>/` - Get game details
-- `PUT /api/games/<id>/` - Update game
-- `DELETE /api/games/<id>/` - Delete game
+- Authentication (JWT - SPA friendly)
+   - `POST /auth/token/` — obtain access + refresh tokens (response includes `user` object)
+      - body: `{ "username": "...", "password": "..." }`
+   - `POST /auth/token/refresh/` — refresh access token (body: `{ "refresh": "<token>" }`)
+   - `POST /auth/token/verify/` — verify a token
+   - `GET /auth/user/` — (named `user_me`) returns current user (`me` action; requires Authorization header)
 
-### Match Prediction
-- `GET /api/predict/?team1=<id>&team2=<id>` - Get match prediction
+- Users
+   - `GET /api/users/` — list users
+   - `GET /api/users/<id>/` — retrieve user
 
-The prediction endpoint uses a simple historical win-rate heuristic with Laplace smoothing. This provides a basic probability estimate based on past performance and can be extended with more sophisticated models.
+- Leagues / Seasons / Standings
+   - `GET /api/leagues/` — list leagues
+   - `GET /api/leagues/<id>/` — league detail
+   - `GET /api/seasons/` — list seasons
+   - `GET /api/seasons/<id>/` — season detail
+   - `GET /api/standings/` — list cached standings
+
+- Teams / Players / Contracts / Goals
+   - `GET /api/teams/`, `POST /api/teams/`, `GET/PUT/DELETE /api/teams/<id>/`
+   - `GET /api/players/`, `GET /api/players/<id>/`
+   - `GET /api/goals/`, `POST /api/goals/`, `GET/PUT/DELETE /api/goals/<id>/`
+
+- Games
+   - `GET /api/games/`, `POST /api/games/`, `GET/PUT/DELETE /api/games/<id>/`
+
+- Stats & Predictions
+   - `GET /api/stats/` — simple stats endpoints (e.g. `top_scorers`)
+   - `GET /predict/match/?team1=<id>&team2=<id>` — basic match prediction (heuristic)
+   - `GET /predict/season/?season=<id>` — basic season winner prediction
+
+Examples (token + request)
+
+- Obtain token (curl):
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/token/ \
+   -H "Content-Type: application/json" \
+   -d '{"username":"apitest","password":"TestPass123"}'
+```
+
+Response contains `access`, `refresh` and a `user` object. Use the access token for authorized API calls:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+SPA notes
+- CORS is enabled for `http://localhost:3000` in development (`myproject/settings.py`). The token endpoint returns user info alongside tokens to simplify SPA login flow. For production, review token storage/rotation and consider httpOnly cookies for refresh tokens.
+
+The prediction endpoints use simple heuristics (historical win rates with Laplace smoothing) — they are intentionally basic and intended as examples that can be replaced by a model service.
 
 ## Database Models
 

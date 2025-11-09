@@ -23,6 +23,8 @@ from .forms import (
 )
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 
 def index(request):
@@ -500,6 +502,20 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({'detail': 'Not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Customize the token response to include basic user info for SPA convenience."""
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # include user data
+        data['user'] = UserSerializer(self.user).data
+        return data
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Issue access/refresh tokens and return user info in the response body."""
+    serializer_class = CustomTokenObtainPairSerializer
 
 
 class PlayerViewSet(viewsets.ModelViewSet):
